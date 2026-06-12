@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shell Einstellungen</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0b0d14; color: #e8eaf2; font-family: 'Inter', sans-serif; font-size: 13px; padding: 20px; max-width: 900px; margin: 0 auto; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 14px; border-bottom: 1px solid #1e2235; }
+    .header h1 { font-size: 1rem; font-weight: 600; }
+    .back-link { color: #6b7280; text-decoration: none; font-size: 0.75rem; border: 0.5px solid #2a2e45; padding: 4px 10px; border-radius: 6px; }
+    .back-link:hover { color: #e8eaf2; border-color: #6366f1; }
+    .section { margin-bottom: 32px; }
+    .section-title { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #6b7280; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid #1e2235; }
+    .form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+    .form-group label { font-size: 0.62rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.08em; }
+    .form-row { display: grid; gap: 8px; align-items: end; margin-bottom: 10px; }
+    .fr2 { grid-template-columns: 1fr 1fr; }
+    .fr4 { grid-template-columns: 1fr 2fr auto auto; }
+    .fr5 { grid-template-columns: 1fr 1.5fr 1fr auto auto; }
+    input[type="text"], input[type="url"], input[type="password"], select {
+      background: #111320; border: 0.5px solid #2a2e45; color: #e8eaf2;
+      padding: 8px 10px; border-radius: 8px; font-size: 0.78rem; font-family: inherit; width: 100%;
+    }
+    input:focus, select:focus { outline: none; border-color: #6366f1; }
+    input[type="color"] { background: #111320; border: 0.5px solid #2a2e45; border-radius: 8px; height: 36px; width: 50px; cursor: pointer; padding: 2px; }
+    .btn { padding: 8px 14px; border-radius: 8px; border: none; cursor: pointer; font-size: 0.75rem; font-weight: 500; font-family: inherit; transition: opacity 0.15s; white-space: nowrap; }
+    .btn:hover { opacity: 0.85; }
+    .btn-primary { background: #6366f1; color: #fff; }
+    .btn-success { background: #1D9E75; color: #fff; }
+    .btn-danger { background: transparent; border: 0.5px solid #ef4444 !important; color: #ef4444; }
+    .btn-sm { padding: 5px 10px; font-size: 0.7rem; }
+    .item-card { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #111320; border: 0.5px solid #1e2235; border-radius: 10px; margin-bottom: 8px; }
+    .color-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .item-name { font-size: 0.85rem; font-weight: 500; }
+    .item-sub { font-size: 0.62rem; color: #6b7280; font-family: 'JetBrains Mono', monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .item-info { flex: 1; min-width: 0; }
+    .item-badge { font-size: 0.6rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 7px; border-radius: 10px; flex-shrink: 0; }
+    #message { font-size: 0.78rem; padding: 8px 14px; border-radius: 8px; margin-bottom: 16px; display: none; }
+    .msg-success { background: rgba(74,222,128,0.1); border: 0.5px solid #4ade80; color: #4ade80; }
+    .msg-error { background: rgba(248,113,113,0.1); border: 0.5px solid #f87171; color: #f87171; }
+    .hint { font-size: 0.68rem; color: #4a5068; margin-top: 4px; line-height: 1.4; }
+    .empty-state { color: #4a5068; font-size: 0.78rem; padding: 8px 0; }
+  </style>
+</head>
+<body>
+<div class="header">
+  <h1>&#9881; Shell Einstellungen</h1>
+  <a href="/" class="back-link" target="_top">&#8592; Zur&uuml;ck</a>
+</div>
+<div id="message"></div>
+
+<!-- HA Config -->
+<div class="section">
+  <div class="section-title">Home Assistant Verbindung</div>
+  <div class="form-row fr2">
+    <div class="form-group">
+      <label>HA URL</label>
+      <input type="text" id="ha-url" placeholder="http://192.168.178.103:8123">
+    </div>
+    <div class="form-group">
+      <label>Long-Lived Access Token</label>
+      <input type="password" id="ha-token" placeholder="eyJhbGci...">
+    </div>
+  </div>
+  <button class="btn btn-success" onclick="saveHA()">Speichern</button>
+  <button class="btn btn-primary" style="margin-left:8px;" onclick="testHA()">Testen</button>
+</div>
+
+<!-- Navbar Buttons -->
+<div class="section">
+  <div class="section-title">Navbar-Buttons</div>
+  <div class="form-row fr5">
+    <div class="form-group">
+      <label>Name</label>
+      <input type="text" id="btn-name" placeholder="z.B. Belohnung">
+    </div>
+    <div class="form-group" id="btn-entity-group">
+      <label id="btn-entity-label">URL</label>
+      <input type="text" id="btn-entity" placeholder="/proxy/belohnung/">
+    </div>
+    <div class="form-group">
+      <label>Typ</label>
+      <select id="btn-type" onchange="onBtnTypeChange()">
+        <option value="iframe_url">Iframe URL</option>
+        <option value="input_boolean">input_boolean</option>
+        <option value="script">Script</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Icon</label>
+      <input type="text" id="btn-icon" placeholder="🏠" style="width:60px;">
+    </div>
+    <div class="form-group">
+      <label>&nbsp;</label>
+      <button class="btn btn-primary" onclick="addButton()">Hinzuf&uuml;gen</button>
+    </div>
+  </div>
+  <div id="button-list"><p class="empty-state">Wird geladen...</p></div>
+</div>
+
+<!-- Status Entities -->
+<div class="section">
+  <div class="section-title">Status-Anzeige im Header</div>
+  <div class="hint" style="margin-bottom:12px;">Badge erscheint wenn State NICHT dem "Verstecken wenn"-Wert entspricht. z.B. sensor.offene_fenster → 0 &nbsp;|&nbsp; input_select.status_trockner → Aus</div>
+  <div class="form-row" style="grid-template-columns:1fr 1.5fr auto auto auto;gap:8px;align-items:end;margin-bottom:10px;">
+    <div class="form-group">
+      <label>Name</label>
+      <input type="text" id="se-name" placeholder="Offene Fenster">
+    </div>
+    <div class="form-group">
+      <label>Entity ID</label>
+      <input type="text" id="se-entity" placeholder="sensor.offene_fenster">
+    </div>
+    <div class="form-group">
+      <label>Verstecken wenn</label>
+      <input type="text" id="se-hide" placeholder="0" style="width:80px;">
+    </div>
+    <div class="form-group">
+      <label>Farbe</label>
+      <input type="color" id="se-color" value="#fb923c">
+    </div>
+    <div class="form-group">
+      <label>&nbsp;</label>
+      <button class="btn btn-primary" onclick="addStatusEntity()">Hinzuf&uuml;gen</button>
+    </div>
+  </div>
+  <div id="status-entity-list"><p class="empty-state">Wird geladen...</p></div>
+</div>
+
+<!-- Proxy Routen -->
+<div class="section">
+  <div class="section-title">Proxy-Routen (Neustart erforderlich)</div>
+  <div class="hint" style="margin-bottom:12px;">Neue App einbinden: Pfad wird zu /proxy/PFAD/ im Browser. Ziel ist die interne URL der App.</div>
+  <div class="form-row" style="grid-template-columns:1fr 1fr 2fr auto;gap:8px;align-items:end;margin-bottom:10px;">
+    <div class="form-group">
+      <label>Name</label>
+      <input type="text" id="px-name" placeholder="Belohnung">
+    </div>
+    <div class="form-group">
+      <label>Pfad</label>
+      <input type="text" id="px-path" placeholder="belohnung">
+    </div>
+    <div class="form-group">
+      <label>Ziel-URL</label>
+      <input type="text" id="px-target" placeholder="http://192.168.178.114:3009">
+    </div>
+    <div class="form-group">
+      <label>&nbsp;</label>
+      <button class="btn btn-primary" onclick="addProxy()">Hinzuf&uuml;gen</button>
+    </div>
+  </div>
+  <div id="proxy-list"><p class="empty-state">Wird geladen...</p></div>
+</div>
+
+<script>
+function showMessage(text, type) {
+  const el = document.getElementById('message');
+  el.textContent = text;
+  el.className = type === 'success' ? 'msg-success' : 'msg-error';
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 3000);
+}
+
+// HA
+async function loadHA() {
+  try {
+    const res = await fetch('/api/ha/config');
+    const d = await res.json();
+    if (d.url) document.getElementById('ha-url').value = d.url;
+    if (d.token) document.getElementById('ha-token').value = d.token;
+  } catch(e) {}
+}
+async function saveHA() {
+  const url = document.getElementById('ha-url').value.trim();
+  const token = document.getElementById('ha-token').value.trim();
+  const res = await fetch('/api/ha/config', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({url,token}) });
+  showMessage(res.ok ? 'Gespeichert' : 'Fehler', res.ok ? 'success' : 'error');
+}
+async function testHA() {
+  try {
+    const res = await fetch('/api/ha/status');
+    showMessage(res.ok ? 'Verbindung erfolgreich!' : 'Fehler: ' + res.status, res.ok ? 'success' : 'error');
+  } catch(e) { showMessage('Verbindungsfehler', 'error'); }
+}
+
+// Buttons
+function onBtnTypeChange() {
+  const type = document.getElementById('btn-type').value;
+  const label = document.getElementById('btn-entity-label');
+  const input = document.getElementById('btn-entity');
+  if (type === 'iframe_url') { label.textContent = 'URL'; input.placeholder = '/proxy/belohnung/'; }
+  else { label.textContent = 'Entity ID'; input.placeholder = 'input_boolean.pool_automatik_aktiv'; }
+}
+
+async function renderButtons() {
+  const res = await fetch('/api/buttons');
+  const data = await res.json();
+  const list = document.getElementById('button-list');
+  if (!data || data.length === 0) { list.innerHTML = '<p class="empty-state">Noch keine Buttons.</p>'; return; }
+  const typeLabel = { iframe_url: 'Iframe', input_boolean: 'input_boolean', script: 'Script' };
+  list.innerHTML = data.map(btn => `
+    <div class="item-card">
+      <span style="font-size:1.2rem;">${btn.icon}</span>
+      <div class="item-info">
+        <div class="item-name">${btn.name}</div>
+        <div class="item-sub">${btn.type === 'iframe_url' ? (btn.iframeUrl || '-') : (btn.entityId || '-')}</div>
+      </div>
+      <span class="item-badge" style="background:rgba(99,102,241,0.1);color:#818cf8;border:0.5px solid #4338ca;">${typeLabel[btn.type]||btn.type}</span>
+      <span class="color-dot" style="background:${btn.color}"></span>
+      <button class="btn btn-danger btn-sm" onclick="deleteBtn('${btn.id}')">L&ouml;schen</button>
+    </div>`).join('');
+}
+
+async function addButton() {
+  const name = document.getElementById('btn-name').value.trim();
+  const entityOrUrl = document.getElementById('btn-entity').value.trim();
+  const type = document.getElementById('btn-type').value;
+  const icon = document.getElementById('btn-icon').value.trim() || '▶';
+  if (!name || !entityOrUrl) { showMessage('Name und URL/Entity erforderlich', 'error'); return; }
+  const payload = { name, type, icon,
+    entityId: type !== 'iframe_url' ? entityOrUrl : '',
+    iframeUrl: type === 'iframe_url' ? entityOrUrl : ''
+  };
+  const res = await fetch('/api/buttons', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+  if (res.ok) { document.getElementById('btn-name').value=''; document.getElementById('btn-entity').value=''; showMessage('Hinzugef\u00fcgt', 'success'); renderButtons(); }
+  else showMessage('Fehler', 'error');
+}
+
+async function deleteBtn(id) {
+  if (!confirm('L\u00f6schen?')) return;
+  const res = await fetch('/api/buttons/' + id, { method:'DELETE' });
+  if (res.ok) { showMessage('Gel\u00f6scht', 'success'); renderButtons(); }
+}
+
+// Status Entities
+async function renderStatusEntities() {
+  const res = await fetch('/api/status-entities');
+  const data = await res.json();
+  const list = document.getElementById('status-entity-list');
+  if (!data || data.length === 0) { list.innerHTML = '<p class="empty-state">Noch keine Entities.</p>'; return; }
+  list.innerHTML = data.map(se => `
+    <div class="item-card">
+      <span class="color-dot" style="background:${se.color||'#fb923c'}"></span>
+      <div class="item-info">
+        <div class="item-name">${se.name}</div>
+        <div class="item-sub">${se.entityId}</div>
+      </div>
+      <span class="item-badge" style="background:rgba(251,146,60,0.1);color:#fb923c;border:0.5px solid rgba(251,146,60,0.3);">verstecken wenn: ${se.hideWhen}</span>
+      <button class="btn btn-danger btn-sm" onclick="deleteSE('${se.id}')">L&ouml;schen</button>
+    </div>`).join('');
+}
+
+async function addStatusEntity() {
+  const name = document.getElementById('se-name').value.trim();
+  const entityId = document.getElementById('se-entity').value.trim();
+  const hideWhen = document.getElementById('se-hide').value.trim() || '0';
+  const color = document.getElementById('se-color').value;
+  if (!name || !entityId) { showMessage('Name und Entity ID erforderlich', 'error'); return; }
+  const res = await fetch('/api/status-entities', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name,entityId,hideWhen,color}) });
+  if (res.ok) { document.getElementById('se-name').value=''; document.getElementById('se-entity').value=''; showMessage('Hinzugef\u00fcgt', 'success'); renderStatusEntities(); }
+  else showMessage('Fehler', 'error');
+}
+
+async function deleteSE(id) {
+  if (!confirm('L\u00f6schen?')) return;
+  const res = await fetch('/api/status-entities/' + id, { method:'DELETE' });
+  if (res.ok) { showMessage('Gel\u00f6scht', 'success'); renderStatusEntities(); }
+}
+
+// Proxies
+async function renderProxies() {
+  const res = await fetch('/api/proxies');
+  const data = await res.json();
+  const list = document.getElementById('proxy-list');
+  if (!data || data.length === 0) { list.innerHTML = '<p class="empty-state">Noch keine Proxy-Routen (weather-dash ist fest eingebaut).</p>'; return; }
+  list.innerHTML = data.map(px => `
+    <div class="item-card">
+      <div class="item-info">
+        <div class="item-name">/proxy/${px.path}/</div>
+        <div class="item-sub">${px.target}</div>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="deleteProxy('${px.id}')">L&ouml;schen</button>
+    </div>`).join('');
+}
+
+async function addProxy() {
+  const name = document.getElementById('px-name').value.trim();
+  const path = document.getElementById('px-path').value.trim();
+  const target = document.getElementById('px-target').value.trim();
+  if (!name || !path || !target) { showMessage('Alle Felder ausf\u00fcllen', 'error'); return; }
+  const res = await fetch('/api/proxies', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name,path,target}) });
+  if (res.ok) { showMessage('Hinzugef\u00fcgt \u2013 Neustart erforderlich!', 'success'); document.getElementById('px-name').value=''; document.getElementById('px-path').value=''; document.getElementById('px-target').value=''; renderProxies(); }
+  else showMessage('Fehler', 'error');
+}
+
+async function deleteProxy(id) {
+  if (!confirm('L\u00f6schen? (Neustart erforderlich)')) return;
+  const res = await fetch('/api/proxies/' + id, { method:'DELETE' });
+  if (res.ok) { showMessage('Gel\u00f6scht \u2013 Neustart erforderlich!', 'success'); renderProxies(); }
+}
+
+loadHA(); renderButtons(); renderStatusEntities(); renderProxies();
+</script>
+</body>
+</html>

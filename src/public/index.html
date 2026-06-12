@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Heyder Dashboard</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0f1219; color: #e8eaf2; font-family: 'Inter', sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+    .header { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; background: #0d0f1a; border-bottom: 1px solid #1e2235; flex-shrink: 0; min-height: 44px; gap: 12px; }
+    .header-left { font-size: 0.7rem; color: #6b7280; white-space: nowrap; }
+    .header-status { display: flex; align-items: center; gap: 6px; flex: 1; justify-content: center; flex-wrap: wrap; }
+    .status-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 0.65rem; font-weight: 500; padding: 3px 9px; border-radius: 20px; }
+    .header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .live-badge { background: #052e16; color: #4ade80; border: 1px solid #166534; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.15em; padding: 3px 10px; border-radius: 20px; display: flex; align-items: center; gap: 5px; }
+    .live-badge::before { content: ''; width: 5px; height: 5px; background: #4ade80; border-radius: 50%; animation: blink 2s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+    .iframe-container { flex: 1; min-height: 0; position: relative; }
+    .iframe-container iframe { width: 100%; height: 100%; border: none; display: block; }
+    .iframe-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: #0f1219; font-size: 0.8rem; color: #6b7280; transition: opacity 0.3s; }
+    .iframe-loading.hidden { opacity: 0; pointer-events: none; }
+
+    .navbar { background: #0d0f1a; border-top: 1px solid #1e2235; padding: 6px 16px; display: flex; align-items: center; gap: 8px; flex-shrink: 0; min-height: 60px; flex-wrap: wrap; }
+    .navbar-label { font-size: 0.55rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #4a5068; margin-right: 4px; white-space: nowrap; }
+    .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; background: #111320; border: 0.5px solid #2a2e45; border-radius: 10px; padding: 7px 14px; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s; min-width: 64px; min-height: 46px; color: #e8eaf2; }
+    .nav-btn:hover { background: #181b2e; border-color: #6366f1; }
+    .nav-btn:active { transform: scale(0.95); }
+    .nav-btn.active { border-color: #6366f1 !important; background: rgba(99,102,241,0.12); }
+    .nav-btn.triggering { border-color: #4ade80 !important; background: rgba(74,222,128,0.08); }
+    .nav-btn.error { border-color: #f87171 !important; background: rgba(248,113,113,0.08); }
+    .nav-btn-icon { font-size: 1.2rem; line-height: 1; }
+    .nav-btn-label { font-size: 0.58rem; font-weight: 500; color: #9ca3af; white-space: nowrap; }
+    .nav-divider { width: 1px; height: 36px; background: #1e2235; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">Arnstadt &middot; Heyder Dashboard</div>
+  <div class="header-status" id="header-status"></div>
+  <div class="header-right">
+    <a href="/proxy/wetter/settings.html" target="main-frame" style="color:#6b7280;font-size:0.7rem;text-decoration:none;padding:3px 8px;border:0.5px solid #2a2e45;border-radius:6px;" onclick="clearActive()">&#9881; Einstellungen</a>
+    <span class="live-badge">LIVE</span>
+  </div>
+</div>
+
+<div class="iframe-container">
+  <div class="iframe-loading" id="iframe-loading">Wird geladen...</div>
+  <iframe id="main-frame" name="main-frame" src="/proxy/wetter/?ws_host=192.168.178.114:3014" onload="document.getElementById('iframe-loading').classList.add('hidden')"></iframe>
+</div>
+
+<nav class="navbar">
+  <span class="navbar-label">Schnellzugriff</span>
+
+  <!-- Fester Home-Button -->
+  <button class="nav-btn active" id="nav-home" onclick="goHome()">
+    <span class="nav-btn-icon">🏠</span>
+    <span class="nav-btn-label">Dashboard</span>
+  </button>
+  <div class="nav-divider"></div>
+
+  <!-- Dynamische Buttons aus weather-dash API -->
+  <div id="navbar-buttons" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;"></div>
+</nav>
+
+<script>
+const API_BASE = '';
+
+function goHome() {
+  setActive('nav-home');
+  loadIframe('/proxy/wetter/?ws_host=192.168.178.114:3014');
+}
+
+function setActive(id) {
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+}
+
+function loadIframe(url) {
+  document.getElementById('iframe-loading').classList.remove('hidden');
+  document.getElementById('main-frame').src = url;
+}
+
+async function loadNavbarButtons() {
+  try {
+    const res = await fetch(API_BASE + '/api/buttons');
+    const buttons = await res.json();
+    const container = document.getElementById('navbar-buttons');
+    if (!buttons || buttons.length === 0) { container.innerHTML = ''; return; }
+
+    let html = '';
+    buttons.forEach((btn, i) => {
+      if (i > 0 && buttons[i-1].type !== btn.type) html += '<div class="nav-divider"></div>';
+      const onclick = btn.type === 'iframe_url'
+        ? 'openIframeBtn(this, \'' + encodeURIComponent(btn.iframeUrl || '') + '\')'
+        : 'triggerHA(\'' + btn.id + '\', this)';
+      html += '<button class="nav-btn" id="nav-btn-' + btn.id + '" style="border-color:' + btn.color + '33;" onclick="' + onclick + '">'
+        + '<span class="nav-btn-icon">' + btn.icon + '</span>'
+        + '<span class="nav-btn-label">' + btn.name + '</span>'
+        + '</button>';
+    });
+    container.innerHTML = html;
+  } catch(e) { console.error('Navbar error:', e); }
+}
+
+function openIframeBtn(el, encodedUrl) {
+  const url = decodeURIComponent(encodedUrl);
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  // Interne URLs direkt, externe via Proxy
+  const proxyUrl = (url.startsWith('http://') || url.startsWith('https://'))
+    ? '/proxy/ext/?target=' + encodeURIComponent(url)
+    : url;
+  loadIframe(proxyUrl);
+}
+
+async function triggerHA(id, el) {
+  el.classList.add('triggering');
+  try {
+    await fetch(API_BASE + '/api/ha/trigger/' + id, { method: 'POST' });
+    setTimeout(() => el.classList.remove('triggering'), 1500);
+  } catch(e) {
+    el.classList.remove('triggering');
+    el.classList.add('error');
+    setTimeout(() => el.classList.remove('error'), 2000);
+  }
+}
+
+function renderStatusBadges(active) {
+  const container = document.getElementById('header-status');
+  if (!container) return;
+  if (!active || active.length === 0) { container.innerHTML = ''; return; }
+  container.innerHTML = active.map(function(e) {
+    const color = e.color || '#fb923c';
+    let label = e.name;
+    if (!isNaN(parseInt(e.state)) && parseInt(e.state) > 0) label = e.name + ': ' + e.state;
+    else if (isNaN(parseInt(e.state)) && e.state !== 'unknown') label = e.name + ': ' + e.state;
+    return '<span class="status-badge" style="background:' + color + '18;border:0.5px solid ' + color + '55;color:' + color + ';">' + label + '</span>';
+  }).join('');
+}
+
+async function pollStatus() {
+  try {
+    const res = await fetch(API_BASE + '/api/ha/status');
+    const data = await res.json();
+    renderStatusBadges(data.active || []);
+  } catch(e) {}
+}
+
+loadNavbarButtons();
+pollStatus();
+setInterval(pollStatus, 30000);
+</script>
+</body>
+</html>
