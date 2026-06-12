@@ -8,42 +8,30 @@ const CONFIG_FILE = '/data/config.json';
 
 app.use(express.json());
 
-// Shell-owned API routes - these are handled locally
+// Shell-owned API routes - handled locally (checked against full path)
 const SHELL_API_ROUTES = [
   '/api/ha', '/api/buttons', '/api/status-entities', '/api/proxies'
 ];
 
-// For API calls from proxied apps, forward to the right backend
-// Uses Referer header to determine which app made the call
 const WEATHER_DASH = 'http://192.168.178.114:3014';
 
-app.use('/api', (req, res, next) => {
-  const isShellRoute = SHELL_API_ROUTES.some(r => 
+// Smart API routing - check full URL path BEFORE /api routes are registered
+app.use((req, res, next) => {
+  if (!req.path.startsWith('/api/')) return next();
+  
+  const isShellRoute = SHELL_API_ROUTES.some(r =>
     req.path === r || req.path.startsWith(r + '/') || req.path.startsWith(r + '?')
   );
   if (isShellRoute) return next();
 
-  // Check referer to route to correct backend
+  // Route to correct backend based on Referer
   const referer = req.headers.referer || '';
   const c = loadConfig();
   const proxies = c.proxies || [];
-  
-  // Find matching proxy by referer path
   const matchedProxy = proxies.find(p => referer.includes('/proxy/' + p.path));
-  
-  if (matchedProxy) {
-    // Forward to the proxied app's backend
-    return createProxyMiddleware({
-      target: matchedProxy.target,
-      changeOrigin: true,
-    })(req, res, next);
-  }
-  
-  // Default: forward to weather-dash
-  return createProxyMiddleware({
-    target: WEATHER_DASH,
-    changeOrigin: true,
-  })(req, res, next);
+
+  const target = matchedProxy ? matchedProxy.target : WEATHER_DASH;
+  return createProxyMiddleware({ target, changeOrigin: true })(req, res, next);
 });
 
 app.use(express.static('src/public'));
