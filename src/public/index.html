@@ -42,7 +42,7 @@
   <div class="header-left">Arnstadt &middot; Heyder Dashboard</div>
   <div class="header-status" id="header-status"></div>
   <div class="header-right">
-    <a href="/proxy/wetter/settings.html" target="main-frame" style="color:#6b7280;font-size:0.7rem;text-decoration:none;padding:3px 8px;border:0.5px solid #2a2e45;border-radius:6px;" onclick="clearActive()">&#9881; Einstellungen</a>
+    <a href="/settings.html" target="main-frame" style="color:#6b7280;font-size:0.7rem;text-decoration:none;padding:3px 8px;border:0.5px solid #2a2e45;border-radius:6px;">&#9881; Einstellungen</a>
     <span class="live-badge">LIVE</span>
   </div>
 </div>
@@ -83,6 +83,10 @@ function setActive(id) {
 function loadIframe(url) {
   document.getElementById('iframe-loading').classList.remove('hidden');
   document.getElementById('main-frame').src = url;
+}
+
+function clearActive() {
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
 }
 
 async function loadNavbarButtons() {
