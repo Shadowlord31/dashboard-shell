@@ -208,13 +208,14 @@ function setupProxies() {
         proxyRes: async (proxyRes, req, res) => {
           delete proxyRes.headers['x-frame-options'];
           delete proxyRes.headers['content-security-policy'];
-          // Remove encoding so we can rewrite HTML
-          delete proxyRes.headers['content-encoding'];
-          delete proxyRes.headers['content-length'];
+
           const contentType = proxyRes.headers['content-type'] || '';
           if (contentType.includes('text/html')) {
             const zlib = require('zlib');
-            const encoding = proxyRes.headers['content-encoding'];
+            // Read encoding BEFORE deleting the header
+            const encoding = proxyRes.headers['content-encoding'] || '';
+            delete proxyRes.headers['content-encoding'];
+            delete proxyRes.headers['content-length'];
             let stream = proxyRes;
             if (encoding === 'gzip') stream = proxyRes.pipe(zlib.createGunzip());
             else if (encoding === 'br') stream = proxyRes.pipe(zlib.createBrotliDecompress());
