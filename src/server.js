@@ -186,8 +186,11 @@ function setupProxies() {
             let body = '';
             proxyRes.on('data', chunk => body += chunk.toString());
             proxyRes.on('end', () => {
-              // Inject base tag to fix relative URLs
-              body = body.replace('<head>', '<head><base href="' + mountPath + '/">');
+              // Rewrite absolute asset paths to proxy paths
+              const base = mountPath.replace(/\/$/, '');
+              body = body.replace(/href="\/([^"]+)"/g, (m, p) => p.startsWith('http') ? m : 'href="' + base + '/' + p + '"');
+              body = body.replace(/src="\/([^"]+)"/g, (m, p) => p.startsWith('http') ? m : 'src="' + base + '/' + p + '"');
+              body = body.replace(/action="\/([^"]+)"/g, (m, p) => 'action="' + base + '/' + p + '"');
               res.set(proxyRes.headers);
               res.removeHeader('x-frame-options');
               res.removeHeader('content-security-policy');
