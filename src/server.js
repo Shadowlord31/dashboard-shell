@@ -208,19 +208,30 @@ function setupProxies() {
         proxyRes: async (proxyRes, req, res) => {
           delete proxyRes.headers['x-frame-options'];
           delete proxyRes.headers['content-security-policy'];
+          // Remove encoding so we can rewrite HTML
+          delete proxyRes.headers['content-encoding'];
+          delete proxyRes.headers['content-length'];
           const contentType = proxyRes.headers['content-type'] || '';
           if (contentType.includes('text/html')) {
+            const zlib = require('zlib');
+            const encoding = proxyRes.headers['content-encoding'];
+            let stream = proxyRes;
+            if (encoding === 'gzip') stream = proxyRes.pipe(zlib.createGunzip());
+            else if (encoding === 'br') stream = proxyRes.pipe(zlib.createBrotliDecompress());
+            else if (encoding === 'deflate') stream = proxyRes.pipe(zlib.createInflate());
             let body = '';
-            proxyRes.on('data', chunk => body += chunk.toString());
-            proxyRes.on('end', () => {
-              // Rewrite absolute asset paths to proxy paths
+            stream.on('data', chunk => body += chunk.toString());
+            stream.on('end', () => {
               const base = mountPath.replace(/\/$/, '');
               body = body.replace(/href="\/([^"]+)"/g, (m, p) => p.startsWith('http') ? m : 'href="' + base + '/' + p + '"');
               body = body.replace(/src="\/([^"]+)"/g, (m, p) => p.startsWith('http') ? m : 'src="' + base + '/' + p + '"');
               body = body.replace(/action="\/([^"]+)"/g, (m, p) => 'action="' + base + '/' + p + '"');
-              res.set(proxyRes.headers);
-              res.removeHeader('x-frame-options');
-              res.removeHeader('content-security-policy');
+              const headers = {...proxyRes.headers};
+              delete headers['content-encoding'];
+              delete headers['content-length'];
+              delete headers['x-frame-options'];
+              delete headers['content-security-policy'];
+              res.set(headers);
               res.status(proxyRes.statusCode).send(body);
             });
           } else {
