@@ -176,10 +176,27 @@ function setupProxies() {
       target: proxy.target,
       changeOrigin: true,
       pathRewrite: { ['^' + mountPath]: '' },
+      selfHandleResponse: true,
       on: {
-        proxyRes: (proxyRes) => {
+        proxyRes: async (proxyRes, req, res) => {
           delete proxyRes.headers['x-frame-options'];
           delete proxyRes.headers['content-security-policy'];
+          const contentType = proxyRes.headers['content-type'] || '';
+          if (contentType.includes('text/html')) {
+            let body = '';
+            proxyRes.on('data', chunk => body += chunk.toString());
+            proxyRes.on('end', () => {
+              // Inject base tag to fix relative URLs
+              body = body.replace('<head>', '<head><base href="' + mountPath + '/">');
+              res.set(proxyRes.headers);
+              res.removeHeader('x-frame-options');
+              res.removeHeader('content-security-policy');
+              res.status(proxyRes.statusCode).send(body);
+            });
+          } else {
+            res.set(proxyRes.headers);
+            proxyRes.pipe(res);
+          }
         }
       },
       ws: true
