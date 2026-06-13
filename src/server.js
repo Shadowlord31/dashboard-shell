@@ -195,6 +195,25 @@ function setupProxies() {
     ws: true
   }));
 
+  // Built-in: Home Assistant - transparent proxy, no HTML rewriting
+  app.use('/proxy/ha', createProxyMiddleware({
+    target: 'http://192.168.178.103:8123',
+    changeOrigin: true,
+    pathRewrite: { '^/proxy/ha': '' },
+    on: {
+      proxyRes: (proxyRes) => {
+        delete proxyRes.headers['x-frame-options'];
+        delete proxyRes.headers['content-security-policy'];
+        // Fix absolute redirect locations
+        if (proxyRes.headers['location']) {
+          proxyRes.headers['location'] = proxyRes.headers['location']
+            .replace('http://192.168.178.103:8123', '/proxy/ha');
+        }
+      }
+    },
+    ws: true
+  }));
+
   // Dynamic proxies from config
   proxies.forEach(proxy => {
     const mountPath = '/proxy/' + proxy.path.replace(/^\//, '');
