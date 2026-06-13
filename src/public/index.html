@@ -116,10 +116,8 @@ function openIframeBtn(el, encodedUrl) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
   // Interne URLs direkt, externe via Proxy
-  const proxyUrl = (url.startsWith('http://') || url.startsWith('https://'))
-    ? '/proxy/ext/?target=' + encodeURIComponent(url)
-    : url;
-  loadIframe(proxyUrl);
+  // Use URL directly - external URLs work if target has x-frame-options disabled
+  loadIframe(url);
 }
 
 async function triggerHA(id, el) {
