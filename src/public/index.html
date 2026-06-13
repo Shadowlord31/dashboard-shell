@@ -99,9 +99,10 @@ async function loadNavbarButtons() {
     let html = '';
     buttons.forEach((btn, i) => {
       if (i > 0 && buttons[i-1].type !== btn.type) html += '<div class="nav-divider"></div>';
-      const onclick = btn.type === 'iframe_url'
-        ? 'openIframeBtn(this, \'' + encodeURIComponent(btn.iframeUrl || '') + '\')'
-        : 'triggerHA(\'' + btn.id + '\', this)';
+      let onclick;
+      if (btn.type === 'iframe_url') onclick = 'openIframeBtn(this, \'' + encodeURIComponent(btn.iframeUrl || '') + '\')';
+      else if (btn.type === 'new_tab') onclick = 'window.open(\'' + (btn.iframeUrl||'') + '\', \'_blank\')';
+      else onclick = 'triggerHA(\'' + btn.id + '\', this)';
       html += '<button class="nav-btn" id="nav-btn-' + btn.id + '" style="border-color:' + btn.color + '33;" onclick="' + onclick + '">'
         + '<span class="nav-btn-icon">' + btn.icon + '</span>'
         + '<span class="nav-btn-label">' + btn.name + '</span>'
